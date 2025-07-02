@@ -1,0 +1,137 @@
+---
+title: "Revenue Prediction Using Marketing Spend and Economic Indicators"
+output: html_notebook
+---
+
+### **Project Objective**
+
+Analyze and forecast the financial performance of a retail company by:
+
+-   Forecasting future monthly revenue based on past trends and economic/marketing indicators.
+
+-   Evaluating profitability, liquidity, and operational efficiency using financial ratios.
+
+-   Simulating what-if scenarios (e.g., increased marketing spend).
+
+-   Visualizing financial health and forecasts using professional dashboards.
+
+**1. Monthly Forecast Dataset (2019–2023)**
+
+-   **Columns**:
+
+    -   `Month`: Monthly date
+
+    -   `Revenue`: Total revenue with seasonality & trend
+
+    -   `MarketingSpend`: Influenced by revenue + noise
+
+    -   `UnemploymentRate`: Simulated macroeconomic factor
+
+-   **Use cases**:
+
+    -   Time series forecasting (ARIMA/ETS)
+
+    -   Regression with lagged variables
+
+    -   Scenario simulations (e.g., increase marketing)
+
+### **Load necessary libraries and read dataset**
+
+```{r}
+install.packages("ggthemes")
+# 
+library(tidyverse)
+library(lubridate)
+library(forecast)
+library(ggplot2)
+library(tsibble)
+library(scales)
+library(ggthemes)
+summary(forecast_data)
+# Read the dataset
+forecast_data <- read.csv("monthly_forecast_dataset.csv")
+
+
+
+```
+
+### Convert Month to Date
+
+```{r}
+forecast_data$Month <- as.Date(forecast_data$Month)
+
+
+
+```
+
+### Visualize Revenue Trend Over Time
+
+```{r}
+
+ggplot(forecast_data, aes(x = Month, y = Revenue)) +
+  geom_line(color = "steelblue", size = 1) +
+  labs(title = "Monthly Revenue Trend", x = "Month", y = "Revenue") +
+  scale_y_continuous(labels = dollar_format()) +
+  theme_minimal()
+
+
+
+```
+
+### Convert Revenue Column to a Time Series Object
+
+```{r}
+# Create a time series starting from Jan 2019 with monthly frequency
+revenue_ts <- ts(forecast_data$Revenue, start = c(2019, 1), frequency = 12)
+
+# Plot the time series to view pattern
+autoplot(revenue_ts) +
+  labs(title = "Revenue Time Series",
+       x = "Year", y = "Revenue")
+```
+
+### Fit an ARIMA Forecasting Model
+
+```{r}
+# Automatically choose the best ARIMA model
+model_arima <- auto.arima(revenue_ts)
+
+# Show the model's details
+summary(model_arima)
+
+# Forecast for the next 6 months
+forecast_arima <- forecast(model_arima, h = 6)
+
+autoplot(forecast_arima) +
+  labs(title = "Revenue Forecast for Next 6 Months",
+       x = "Year", y = "Revenue") +
+  scale_y_continuous(labels = dollar_format())
+```
+
+### Regression Model to Predict Revenue
+
+```{r}
+# Fit a linear regression model
+model_reg <- lm(Revenue ~ MarketingSpend + UnemploymentRate, data = forecast_data)
+
+# Show the results
+summary(model_reg)
+
+```
+
+### Visualize Actual vs Predicted Revenue
+
+```{r}
+# Add predicted values to the original data
+forecast_data$PredictedRevenue <- predict(model_reg, newdata = forecast_data)
+
+# Plot actual vs predicted
+ggplot(forecast_data, aes(x = Month)) +
+  geom_line(aes(y = Revenue, color = "Actual Revenue"), size = 1) +
+  geom_line(aes(y = PredictedRevenue, color = "Predicted Revenue"), size = 1, linetype = "dashed") +
+  labs(title = "Actual vs Predicted Revenue",
+       x = "Month", y = "Revenue") +
+  scale_y_continuous(labels = dollar_format()) +
+  scale_color_manual(values = c("Actual Revenue" = "steelblue", "Predicted Revenue" = "darkred")) +
+  theme_minimal()
+```
