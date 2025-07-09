@@ -1,4 +1,4 @@
-# Revenue Prediction Using Marketing Spend and Economic Indicators
+# Revenue Forecasting Model
 
 This project builds a regression model to predict monthly revenue for a retail company based on internal marketing spend and external unemployment rate.
 
